@@ -4,15 +4,15 @@ const fs = require("fs");
 const app = express();
 const PORT = 8000;
 
-app.use(express.urlencoded({extended: false}))
+app.use(express.urlencoded({ extended: false }))
 
 
 // routes .....
 app.get("/api/users", (req, res) => {
-    return res.json(users)
+  return res.json(users)
 });
 app.get("/users", (req, res) => {
-    const html = `
+  const html = `
 
     <html>
 
@@ -78,24 +78,27 @@ app.get("/users", (req, res) => {
     
     `
 
-    return res.send(html);
+  return res.send(html);
 });
 
 app.get("/api/users/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const user = users.find((user) =>
-        user.id === id);
-    return res.json(user);
+  const id = Number(req.params.id);
+  const user = users.find((user) =>
+    user.id === id);
+    if(!user) return res.status(404).json({error : "No any Users found"});
+  return res.json(user);
 
 });
 
 
 
 app.get("/users/:id", (req, res) => {
-    const id = Number(req.params.id);
+  const id = Number(req.params.id);
 
-    const user = users.find((user) => user.id === id);
-    const html = `
+  const user = users.find((user) => user.id === id);
+  if(!user) return res.status(404).json({error : "No any path found"});
+
+  const html = `
     <html>
       <title>Users data</title>
       <style>
@@ -158,24 +161,27 @@ app.get("/users/:id", (req, res) => {
     
     `
 
-    return res.send(html);
+  return res.send(html);
 });
 
 app.post("/api/user", (req, res) => {
-    const body = req.body;
-    users.push({...body, id: users.length + 1})
-    fs.writeFile("./MOCK_DATA.json" , JSON.stringify(users), (err, data) => {
-        return res.json({ "Status": "Done" })
-    })
-    
+  const body = req.body;
+  if(!body || !body.first_name || !body.last_name || !body.email || !body.gender || !body.job_title  ){
+    return res.status(400).json({"Error" : "All fields are required"})
+  }
+  users.push({ ...body, id: users.length + 1 })
+  fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
+    return res.status(201).json({ "Status": "Done" })
+  })
+
 });
 
 app.route("/api/user/:id").patch((req, res) => {
-    const id = Number(req.params.id);
-    return res.json({ "Status": "Pending" });
+  const id = Number(req.params.id);
+  return res.json({ "Status": "Pending" });
 }).delete((req, res) => {
-    const id = Number(req.params.id);
-    return res.json({ "Status": "Pending" });
+  const id = Number(req.params.id);
+  return res.json({ "Status": "Pending" });
 })
 
 
