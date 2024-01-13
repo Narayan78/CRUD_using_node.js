@@ -1,17 +1,60 @@
 const express = require("express");
-const users = require("./MOCK_DATA.json");
+const mongoose = require("mongoose");
 const fs = require("fs");
 const app = express();
 const PORT = 8000;
 
+//connection
+mongoose.connect("mongodb://127.0.0.1:27017/Mongo-CRUD-operation")
+  .then(() => console.log("Database Connected successfully"))
+  .catch((err) => console.log("Error while connecting to the databse"));
+
+//user-schema
+const userSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: true,
+  },
+
+  lastName: {
+    type: String,
+  },
+
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+
+  gender: {
+    type: String,
+    required: true,
+  },
+
+  jobTitle: {
+    type: String,
+    required: true,
+  }
+
+},
+{timestamps: true}
+);
+
+const userModel = mongoose.model("user", userSchema);
+
+
+// middleware-plugin
 app.use(express.urlencoded({ extended: false }))
 
 
 // routes .....
-app.get("/api/users", (req, res) => {
-  return res.json(users)
+app.get("/api/users", async (req, res) => {
+  const allDBusers = await userModel.find({})
+  return res.json(allDBusers)  
 });
-app.get("/users", (req, res) => {
+app.get("/users", async (req, res) => {
+
+  const allDBusers = await userModel.find({})
   const html = `
 
     <html>
@@ -49,16 +92,16 @@ app.get("/users", (req, res) => {
         </tr>
     </thead>
     <tbody id="userData">
-          ${users.map((user) => `
+          ${allDBusers.map((user) => `
             <tr>
              <td>
                ${user.id}
              </td>
              <td>
-             ${user.first_name}
+             ${user.firstName}
            </td>
            <td>
-           ${user.last_name}
+           ${user.lastName}
          </td>
          <td>
          ${user.email}
@@ -67,7 +110,7 @@ app.get("/users", (req, res) => {
        ${user.gender}
      </td>
      <td>
-     ${user.job_title}
+     ${user.jobTitle}
    </td>
             </tr>
           `)}
@@ -81,22 +124,19 @@ app.get("/users", (req, res) => {
   return res.send(html);
 });
 
-app.get("/api/users/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const user = users.find((user) =>
-    user.id === id);
-    if(!user) return res.status(404).json({error : "No any Users found"});
+app.get("/api/users/:id", async (req, res) => {
+  
+  const user = await userModel.findById(req.params.id);
+  if (!user) return res.status(404).json({ error: "No any Users found" });
   return res.json(user);
 
 });
 
 
 
-app.get("/users/:id", (req, res) => {
-  const id = Number(req.params.id);
-
-  const user = users.find((user) => user.id === id);
-  if(!user) return res.status(404).json({error : "No any path found"});
+app.get("/users/:id", async (req, res) => {
+  const user = await userModel.findById(req.params.id);
+  if (!user) return res.status(404).json({ error: "No any path found" });
 
   const html = `
     <html>
@@ -137,10 +177,10 @@ app.get("/users/:id", (req, res) => {
        ${user.id}
      </td>
      <td>
-       ${user.first_name}
+       ${user.firstName}
      </td>
      <td>
-       ${user.last_name}
+       ${user.lastName}
      </td>
      <td>
        ${user.email}
@@ -149,7 +189,7 @@ app.get("/users/:id", (req, res) => {
         ${user.gender}
      </td>
      <td>
-        ${user.job_title}
+        ${user.jobTitle}
      </td>
     </tr>
   
@@ -164,16 +204,27 @@ app.get("/users/:id", (req, res) => {
   return res.send(html);
 });
 
-app.post("/api/user", (req, res) => {
+app.post("/api/user", async (req, res) => {
   const body = req.body;
-  if(!body || !body.first_name || !body.last_name || !body.email || !body.gender || !body.job_title  ){
-    return res.status(400).json({"Error" : "All fields are required"})
+  if (!body || !body.first_name || !body.last_name || !body.email || !body.gender || !body.job_title) {
+    return res.status(400).json({ "Error": "All fields are required" })
   }
-  users.push({ ...body, id: users.length + 1 })
-  fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
-    return res.status(201).json({ "Status": "Done" })
-  })
+  // users.push({ ...body, id: users.length + 1 })
+  // fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
+  //   return res.status(201).json({ "Status": "Done" })
+  // })
 
+  const results = await userModel.create({
+    firstName: body.first_name,
+    lastName: body.last_name,
+    email: body.email,
+    gender: body.gender,
+    jobTitle: body.job_title,
+  });
+
+  console.log(results)
+
+  return res.status(201).json({ mes: "Created Successfully" })
 });
 
 app.route("/api/user/:id").patch((req, res) => {
